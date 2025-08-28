@@ -384,6 +384,33 @@ def clear_chat():
     """Clear the chat history"""
     return []
 
+import tempfile
+import os
+import json
+
+def export_chat_to_file(chat_history, export_format="txt"):
+    """Export chat history to a temporary file and return file path"""
+    if not chat_history:
+        return None
+    
+    # Create a temporary file
+    suffix = ".json" if export_format == "json" else ".txt"
+    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    file_path = tmp_file.name
+    
+    if export_format == "json":
+        data = [{"user": u, "bot": b} for u, b in chat_history]
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    else:
+        with open(file_path, "w", encoding="utf-8") as f:
+            for u, b in chat_history:
+                f.write(f"👤 User: {u}\n")
+                f.write(f"🤖 Bot: {b}\n\n")
+    
+    return file_path
+
+
 # 🎨 Enhanced Web App UI
 def create_interface():
     with gr.Blocks(
@@ -571,7 +598,13 @@ def create_interface():
                 with gr.Row():
                     help_btn = gr.Button("❓ Get Help", size="sm")
                     info_btn = gr.Button("ℹ️ Bot Info", size="sm")
-                
+
+                gr.Markdown("### 💾 Export Chat")
+                with gr.Row():
+                    export_txt_btn = gr.Button("📥 Export as TXT", size="sm")
+                    export_json_btn = gr.Button("📥 Export as JSON", size="sm")
+                    download_file = gr.File(label="Download", visible=True)
+
 
 
         # Event handlers
@@ -645,6 +678,18 @@ def create_interface():
         ).then(
             fn=lambda: [],
             outputs=[chat_state]
+        )
+
+        export_txt_btn.click(
+            fn=lambda chat: export_chat_to_file(chat, "txt"),
+            inputs=[chat_state],
+            outputs=[download_file]
+        )
+
+        export_json_btn.click(
+            fn=lambda chat: export_chat_to_file(chat, "json"),
+            inputs=[chat_state],
+            outputs=[download_file]
         )
 
     return demo
